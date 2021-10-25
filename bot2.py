@@ -18,10 +18,10 @@ from matplotlib.ticker import FuncFormatter
 from pypfopt.risk_models import CovarianceShrinkage
 from pypfopt.efficient_frontier import EfficientFrontier
 from pypfopt.discrete_allocation import DiscreteAllocation, get_latest_prices
-# import finance
+import finance
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, ConversationHandler
 from telegram import ReplyKeyboardMarkup, KeyboardButton
-from datetime import datetime, timedelta
+from datetime import datetime
 import settings
 logging.basicConfig(format='%(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO,
@@ -59,9 +59,6 @@ def greet_user(update, context):
         f"Привет! Выбери сектор.",
         reply_markup=main_keyboard()
     )
-# tickers =
-# def list_tickers (update, context):
-#     list_t = []
 
    
 #def help_command(message):  
@@ -85,49 +82,18 @@ def talk_to_me(update, context):
     my_keyboard = ReplyKeyboardMarkup([['Финансы']], True)
     update.message.reply_text(f"{'В секторе финансы я знаю такие компании:'} {', '.join(finance_comp_name)}", reply_markup=final_button())
 
-def portfolio_construct (data):
-    print('Hello')
-    # time_shares = yf.download(list_sh, start = date - timedata(days=365), end=date) ['Adj Close']
-    mu = mean_historical_return(data)
-    # print(mu)
-    # S = CovarianceShrinkage(data).ledoit_wolf()
-    S = risk_models.sample_cov(data)
-    print(S)
+def talk_to_me_2(update, context):
+    user_text = update.message.text
+    print(user_text)
+
+def portfolio_construct (list, date):
+    time_shares = yf.download(list, start = date - timedata(days=365), end=date) ['Adj Close']
+    mu = mean_historical_return(time_shares)
+    S = CovarianceShrinkage(time_shares).ledoit_wolf()
     ef = EfficientFrontier(mu, S, weight_bounds = (0,1))
     weights = ef.max_sharpe()
     cleaned_weights = ef.clean_weights()
-    return cleaned_weights
-
-def talk_to_me_2(update, context):
-    user_text = update.message.text
-    list_sh = user_text.split(',')
-    data = pd.DataFrame(columns=list_sh)
-    today = datetime.today()
-    for ticker in list_sh:
-        # data[ticker] = yf.download(ticker, '2019-01-01','2019-12-31') ['Adj Close']
-        data[ticker] = yf.download(ticker, start = today - timedelta(days=365), end=today) ['Adj Close'] 
-    # print(data)
-    portfolio = portfolio_construct(data)
-    print(portfolio)
-    update.message.reply_text(f'{portfolio}')
-    # mu = mean_historical_return(data)
-    # S = CovarianceShrinkage(data).ledoit_wolf()
-    # ef = EfficientFrontier(mu, S, weight_bounds = (0,1))
-    # weights = ef.max_sharpe()
-    # cleaned_weights = ef.clean_weights()
-    # update.message.reply_text(cleaned_weights)
-    # print(cleaned_weights)
-    # update.message.reply_text(time_shares)
-# def portfolio_construct (data):
-#     # time_shares = yf.download(list_sh, start = date - timedata(days=365), end=date) ['Adj Close']
-#     mu = mean_historical_return(data)
-#     S = CovarianceShrinkage(data).ledoit_wolf()
-#     # ef = EfficientFrontier(mu, S, weight_bounds = (0,1))
-#     # weights = ef.max_sharpe()
-#     # cleaned_weights = ef.clean_weights()
-#     return print(mu,S)
-
-
+    update.message.reply_text(cleaned_weights)
 
 def my_budget_portfolio (update, context, message):
     bot.send_message(message.chat.id, 'Введите сумму')
@@ -161,16 +127,15 @@ def main():
     dp = mybot.dispatcher
     dp.add_handler(CommandHandler("start", greet_user))
     dp.add_handler(MessageHandler(Filters.regex('^Финансы'), talk_to_me))
-    dp.add_handler(MessageHandler(Filters.regex('^Все'),greet_user))
-    # dp.add_handler(CommandHandler("portfolio", portfolio_construct))
-    dp.add_handler(MessageHandler(Filters.text, talk_to_me_2))
+    dp.add_handler(MessageHandler(Filters.regex('^Все'), greet_user))
+    dp.add_handler(MessageHandler(Filters.text, test_func))
     #dp.add_handler(CommandHandler("help", help_command))
 
     # dp.add_handler(MessageHandler(Filters.text, portfolio_construct))
     # dp.add_handler(MessageHandler(Filters.text, talk_to_me_2))
-    dp.add_handler(CommandHandler("budget", my_budget_portfolio))
-    dp.add_handler(CommandHandler("stat", my_portfolio_stat))
-    dp.add_handler(CommandHandler("chart", my_portfolio_chart))
+    dp.add_handler(CommandHandler("my_budget_portfolio", my_budget_portfolio))
+    dp.add_handler(CommandHandler("my_portfolio_stat", my_portfolio_stat))
+    dp.add_handler(CommandHandler("my_portfolio_chart", my_portfolio_chart))
 
     logging.info("Бот стартовал")
     mybot.start_polling()
