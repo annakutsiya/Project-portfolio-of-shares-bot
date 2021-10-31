@@ -27,7 +27,7 @@ from telegram import ReplyKeyboardMarkup, KeyboardButton
 import finance
 import portfolio
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import settings
 
 logging.basicConfig(format='%(name)s - %(levelname)s - %(message)s',
@@ -147,8 +147,8 @@ def help_command(update, context):
         f"3. Используй команду /tic, чтобы получить список тикеров.")
     update.message.reply_text(
         f"3. Используй команду /portfolio, чтобы составить портфель из выбранных компаний.")
-    update.message.reply_text(
-        f"3. Используй команду /chart, чтобы вывести графики портфеля.")    
+    # update.message.reply_text(
+    #     f"3. Используй команду /chart, чтобы вывести графики портфеля.")    
     update.message.reply_text(
         f"4. Если клавиатура снова понадобится, то вызови команду /keyboard.", 
         reply_markup= main_keyboard())
@@ -293,7 +293,11 @@ def portfolio_construct(update, context):
     global ex 
     global weights
     global cleaned_weights
+    # global tickers
+    # global t_weights
     data = pd.DataFrame(columns=tic_list)
+    today = datetime.today()
+    
     for ticker in tic_list:
         data[ticker] = yf.download(ticker, start = today - timedelta(days=365), end=today) ['Adj Close']
     mu = mean_historical_return(data)
@@ -301,12 +305,7 @@ def portfolio_construct(update, context):
     ef = EfficientFrontier(mu, S, weight_bounds = (0,1))
     weights = ef.max_sharpe()
     cleaned_weights = ef.clean_weights()
-    print(cleaned_weights)
-    update.message.reply_text(f'{cleaned_weights}')
-    return cleaned_weights
-def my_portfolio_chart (update, context):
-    global tickers
-    global t_weights
+    
     tickers =[]
     t_weights =[]
 
@@ -325,9 +324,36 @@ def my_portfolio_chart (update, context):
     patches, texts, auto = ax1.pie(t_weights, startangle=90, autopct='%1.1f%%' )
     plt.legend(patches, tickers, loc="best")
     portfolio_chart = plt.savefig('portfilio_chart.png', facecolor = 'blue', bbox_inches='tight', dpi=50 )
-    context.bot.send_photo(photo=open(portfolio_chart))
+    print(cleaned_weights)
+    update.message.reply_text(f'{cleaned_weights}')
+    context.bot.send_photo(photo=portfolio_chart)
     print(f'построение графика')
     return portfolio_chart
+    return cleaned_weights
+# def my_portfolio_chart (update, context):
+#     global tickers
+#     global t_weights
+#     tickers =[]
+#     t_weights =[]
+
+#     for i in cleaned_weights:
+  
+#         if cleaned_weights[i] > 0:
+#              t_weights.append(cleaned_weights[i])
+#              tickers.append(i)
+#     cl_obj = CLA(mu, S)
+#     ax = pplt.plot_efficient_frontier(cl_obj, showfig = False)
+#     ax.xaxis.set_major_formatter(FuncFormatter(lambda x, _: '{:.0%}'.format(x)))
+#     ax.yaxis.set_major_formatter(FuncFormatter(lambda y, _: '{:.0%}'.format(y)))
+#     fig1, ax1 = plt.subplots()
+#     ax1.pie(t_weights, labels=tickers)
+#     ax1.axis('equal')
+#     patches, texts, auto = ax1.pie(t_weights, startangle=90, autopct='%1.1f%%' )
+#     plt.legend(patches, tickers, loc="best")
+#     portfolio_chart = plt.savefig('portfilio_chart.png', facecolor = 'blue', bbox_inches='tight', dpi=50 )
+#     context.bot.send_photo(photo=open(portfolio_chart))
+#     print(f'построение графика')
+#     return portfolio_chart
 
         
 
@@ -350,13 +376,14 @@ def main():
     dp.add_handler(CommandHandler("tic", tic))
     dp.add_handler(CommandHandler("help", help_command))
     dp.add_handler(CommandHandler("keyboard", get_keyboard))
+    dp.add_handler(CommandHandler("portfolio", portfolio_construct))
     dp.add_handler(MessageHandler(Filters.text, collecting_user_data))
 
-    dp.add_handler(CommandHandler("portfolio", portfolio_construct))
+    # dp.add_handler(CommandHandler("portfolio", portfolio_construct))
     # dp.add_handler(MessageHandler(Filters.text, talk_to_me_2))
     #dp.add_handler(CommandHandler("my_budget_portfolio", my_budget_portfolio))
     #dp.add_handler(CommandHandler("my_portfolio_stat", my_portfolio_stat))
-    dp.add_handler(CommandHandler("chart", my_portfolio_chart))
+    # dp.add_handler(CommandHandler("chart", my_portfolio_chart))
 
     logging.info("Бот стартовал")
     mybot.start_polling()
