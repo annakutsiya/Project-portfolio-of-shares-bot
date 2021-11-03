@@ -305,6 +305,11 @@ def portfolio_construct(update, context):
     ef = EfficientFrontier(mu, S, weight_bounds = (0,1))
     weights = ef.max_sharpe()
     cleaned_weights = ef.clean_weights()
+
+    cl_obj = CLA(mu, S)
+    ax = pplt.plot_efficient_frontier(cl_obj, showfig = False)
+    ax.xaxis.set_major_formatter(FuncFormatter(lambda x, _: '{:.0%}'.format(x)))
+    ax.yaxis.set_major_formatter(FuncFormatter(lambda y, _: '{:.0%}'.format(y)))
     
     tickers =[]
     t_weights =[]
@@ -314,21 +319,26 @@ def portfolio_construct(update, context):
         if cleaned_weights[i] > 0:
              t_weights.append(cleaned_weights[i])
              tickers.append(i)
-    cl_obj = CLA(mu, S)
-    ax = pplt.plot_efficient_frontier(cl_obj, showfig = False)
-    ax.xaxis.set_major_formatter(FuncFormatter(lambda x, _: '{:.0%}'.format(x)))
-    ax.yaxis.set_major_formatter(FuncFormatter(lambda y, _: '{:.0%}'.format(y)))
+    
     fig1, ax1 = plt.subplots()
     ax1.pie(t_weights, labels=tickers)
     ax1.axis('equal')
     patches, texts, auto = ax1.pie(t_weights, startangle=90, autopct='%1.1f%%' )
     plt.legend(patches, tickers, loc="best")
-    portfolio_chart = plt.savefig('portfilio_chart.png', facecolor = 'blue', bbox_inches='tight', dpi=50 )
-    print(cleaned_weights)
+    plt.savefig('portfilio_chart.png', facecolor = 'blue', bbox_inches='tight', dpi=50 )
+
     update.message.reply_text(f'{cleaned_weights}')
-    context.bot.send_photo(photo=portfolio_chart)
+    chat_id = update.effective_chat.id
+    context.bot.send_photo(chat_id=chat_id, photo=open('portfilio_chart.png', 'rb'))
+    import os
+    os.remove('portfilio_chart.png')
+    # ax.savefig('portfilio_chart.png', facecolor = 'blue', bbox_inches='tight', dpi=50 )
+    print(cleaned_weights)
+    # update.message.reply_text(f'{cleaned_weights}')
+    # update.message.reply_text(f'{ax}')
+    # context.bot.send_photo(photo='portfilio_chart.png')
     print(f'построение графика')
-    return portfolio_chart
+    return ax1
     return cleaned_weights
 # def my_portfolio_chart (update, context):
 #     global tickers
@@ -358,7 +368,7 @@ def portfolio_construct(update, context):
         
 
 def main():
-    mybot = Updater(settings.API_KEY, use_context=True, request_kwargs=PROXY)
+    mybot = Updater(settings.API_KEY, use_context=True)
     dp = mybot.dispatcher
     #if collect_companies:
      #   dp.add_handler(MessageHandler(Filters.text, talk_to_me_2))
