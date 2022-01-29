@@ -1,0 +1,4 @@
+API_KEY = "2038214103:AAEEYTtbQVPBga6VGFRBUYBa916mM0OaAa4"
+PROXY_URL = "socks5://t1.learn.python.ru:1080"
+PROXY_USERNAME = "learn"
+PROXY_PASSWORD = "python"
